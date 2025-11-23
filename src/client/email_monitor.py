@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, Set
 from datetime import datetime, timezone
 
-from ..utils.config import Config
+from src.utils.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -158,8 +158,7 @@ class EmailMonitor:
             
             # Search for GitLab emails since start time (IMAP server-side filtering)
             since_date = self.start_time.strftime("%d-%b-%Y")
-            # search_criteria = f'(FROM "gitlab" SINCE {since_date})'
-            search_criteria = f'(FROM "razvantudorica@gmail.com" SINCE {since_date})'
+            search_criteria = f'(FROM "{self.config.gitlab_from_email}" SINCE {since_date})'
             logger.info(f"Searching with criteria: {search_criteria}")
             _, message_numbers = mail.search(None, search_criteria)
             
@@ -277,28 +276,3 @@ class EmailMonitor:
         except asyncio.CancelledError:
             logger.info("Email monitoring stopped")
             raise
-
-
-async def test_monitor():
-    """Test email monitor."""
-    from ..utils.config import Config
-    
-    config = Config.from_env()
-    
-    async def on_mr_detected(mr_url: str, subject: str, date: str):
-        print(f"\n=== MR Detected ===")
-        print(f"Subject: {subject}")
-        print(f"Date: {date}")
-        print(f"URL: {mr_url}")
-        print(f"==================\n")
-    
-    monitor = EmailMonitor(config, on_mr_detected)
-    
-    # Run one check
-    await monitor.check_emails()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(test_monitor())
-

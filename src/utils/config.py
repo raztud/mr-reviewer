@@ -12,6 +12,8 @@ class Config:
     # GitLab
     gitlab_url: str
     gitlab_token: str
+    # the gitlab email from which is coming the MR requests
+    gitlab_from_email: str
     
     # Gmail
     gmail_email: str
@@ -49,6 +51,7 @@ class Config:
             gitlab_url=os.getenv("GITLAB_URL", "https://gitlab.com"),
             gitlab_token=os.getenv("GITLAB_TOKEN", ""),
             gmail_email=os.getenv("GMAIL_EMAIL", ""),
+            gitlab_from_email=os.getenv("GITLAB_FROM_EMAIL", "gitlab@mg.gitlab.com"),
             gmail_app_password=os.getenv("GMAIL_APP_PASSWORD", ""),
             ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
             ollama_model=os.getenv("OLLAMA_MODEL", "codellama"),

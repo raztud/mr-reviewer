@@ -1,6 +1,5 @@
 """Standalone client - Connects to network MCP servers."""
 import asyncio
-import json
 import logging
 import signal
 

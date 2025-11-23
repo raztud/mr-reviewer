@@ -167,7 +167,7 @@ class GitLabClient:
             # Extract MR IID
             mr_iid = int(parts[1].split("/")[0].split("?")[0].split("#")[0])
             
-            return (project_id, mr_iid)
+            return project_id, mr_iid
         except Exception as e:
             logger.error(f"Error parsing MR URL {url}: {e}")
             return None

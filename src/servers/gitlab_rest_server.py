@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Simple REST API server for GitLab operations (non-MCP)."""
 
-import json
 import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 import uvicorn
 
 from src.utils.config import Config

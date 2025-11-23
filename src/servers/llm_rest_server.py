@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Simple REST API server for LLM operations (non-MCP)."""
 
-import json
 import logging
 import requests
 from fastapi import FastAPI, HTTPException

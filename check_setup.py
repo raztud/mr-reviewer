@@ -1,42 +1,10 @@
 #!/usr/bin/env python3
 """Setup verification script - Tests all components before running the service."""
 import sys
-import os
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
-
-def test_imports():
-    """Test that all required packages are installed."""
-    print("Testing imports...")
-    errors = []
-    
-    try:
-        import mcp
-        print("  ✅ mcp")
-    except ImportError as e:
-        errors.append(f"  ❌ mcp: {e}")
-    
-    try:
-        import gitlab
-        print("  ✅ python-gitlab")
-    except ImportError as e:
-        errors.append(f"  ❌ python-gitlab: {e}")
-    
-    try:
-        import aiohttp
-        print("  ✅ aiohttp")
-    except ImportError as e:
-        errors.append(f"  ❌ aiohttp: {e}")
-    
-    try:
-        from dotenv import load_dotenv
-        print("  ✅ python-dotenv")
-    except ImportError as e:
-        errors.append(f"  ❌ python-dotenv: {e}")
-    
-    return errors
 
 
 def test_configuration():
@@ -192,10 +160,7 @@ def main():
     print("=" * 60)
     
     all_errors = []
-    
-    # Test imports
-    all_errors.extend(test_imports())
-    
+
     # Test configuration
     all_errors.extend(test_configuration())
     

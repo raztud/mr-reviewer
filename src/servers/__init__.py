@@ -1,2 +1,2 @@
-"""MCP servers."""
+"""REST servers."""
 

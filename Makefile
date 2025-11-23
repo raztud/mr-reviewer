@@ -1,4 +1,4 @@
-.PHONY: help install setup test clean start-gitlab-server start-llm-server start-client start-all stop-all restart-all status logs logs-gitlab logs-llm logs-client dev-gitlab dev-llm dev-client dev-all clean-all
+.PHONY: help install setup test clean start-gitlab-server start-llm-server start-client start-all stop-all restart-all status logs logs-gitlab logs-llm logs-client clean-all check-setup
 
 # Variables
 PYTHON := python
@@ -10,8 +10,8 @@ help:
 	@echo ""
 	@echo "Setup Commands:"
 	@echo "  make install          - Install dependencies"
-	@echo "  make setup           - Setup configuration"
-	@echo "  make test-setup      - Test configuration"
+	@echo "  make setup            - Setup configuration"
+	@echo "  make check-setup      - Check configuration"
 	@echo ""
 	@echo "Run Individual Components:"
 	@echo "  make start-gitlab-server  - Start GitLab MCP server"
@@ -23,11 +23,6 @@ help:
 	@echo "  make stop-all        - Stop all components"
 	@echo "  make restart-all     - Restart all components"
 	@echo "  make logs            - View logs"
-	@echo ""
-	@echo "Development:"
-	@echo "  make dev-gitlab      - Run GitLab server in foreground"
-	@echo "  make dev-llm         - Run LLM server in foreground"
-	@echo "  make dev-client      - Run client in foreground"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean           - Clean temporary files"
@@ -48,41 +43,9 @@ setup:
 	@mkdir -p $(PID_DIR)
 	@mkdir -p logs
 
-test-setup:
+check-setup:
 	@echo "Testing setup..."
-	$(PYTHON) test_setup.py
-
-# Individual components (foreground for development)
-dev-gitlab:
-	@echo "Starting GitLab MCP server (foreground)..."
-	$(PYTHON) -m src.servers.gitlab_server_standalone
-
-dev-llm:
-	@echo "Starting LLM MCP server (foreground)..."
-	$(PYTHON) -m src.servers.llm_server_standalone
-
-dev-client:
-	@echo "Starting client (foreground)..."
-	$(PYTHON) -m src.client.standalone_client
-
-dev-all:
-	@echo "Starting all components in tmux..."
-	@if ! command -v tmux &> /dev/null; then \
-		echo "Error: tmux not installed. Install with: brew install tmux"; \
-		exit 1; \
-	fi
-	@tmux new-session -d -s gitlab-mr-summarizer
-	@tmux split-window -h
-	@tmux split-window -v
-	@tmux select-pane -t 0
-	@tmux send-keys "cd $(PWD) && $(PYTHON) -m src.servers.gitlab_server_standalone" C-m
-	@tmux select-pane -t 1
-	@tmux send-keys "cd $(PWD) && $(PYTHON) -m src.servers.llm_server_standalone" C-m
-	@tmux select-pane -t 2
-	@tmux send-keys "cd $(PWD) && sleep 3 && $(PYTHON) -m src.client.standalone_client" C-m
-	@tmux attach-session -t gitlab-mr-summarizer
-	@echo "Use Ctrl+B then D to detach from tmux"
-	@echo "Use 'tmux attach -t gitlab-mr-summarizer' to reattach"
+	$(PYTHON) check_setup.py
 
 # Background processes
 start-gitlab-server:
