@@ -1,0 +1,32 @@
+# MCP SDK
+mcp>=0.22.0
+
+# GitLab API
+python-gitlab>=7.0.0
+requests>=2.32.5
+
+# Email handling
+google-auth>=2.41.0
+google-auth-oauthlib>=1.2.3
+google-auth-httplib2>=0.2.1
+google-api-python-client>=2.187.0
+
+# Environment variables
+python-dotenv>=1.2.1
+
+# Logging
+structlog>=25.5.0
+
+# Async support
+aiohttp>=3.13.2
+asyncio>=4.0.0
+
+# HTTP/SSE server for MCP
+uvicorn>=0.34.0
+starlette>=0.41.3
+fastapi>=0.115.6
+
+# Testing
+pytest>=8.3.4
+pytest-asyncio>=0.24.0
+
