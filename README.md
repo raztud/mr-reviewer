@@ -24,10 +24,10 @@ The system consists of 3 independent services:
 
 ## Prerequisites
 
-### 1. Python 3.9+
+### 1. Python 3.11+
 
 ```bash
-python --version  # Should be 3.9 or higher
+python --version  # Should be 3.11 or higher
 ```
 
 ### 2. Ollama (Local LLM)
