@@ -163,15 +163,15 @@ class StandaloneOrchestrator:
                 logger.error(f"Error posting comment: {post_data['error']}")
                 return False
 
-            review = await self._ask_llm(mr_data=mr_data, changes_data=changes_data, endpoint="review")
-            logger.info(f"Generated review ({len(review)} chars)")
+            # review = await self._ask_llm(mr_data=mr_data, changes_data=changes_data, endpoint="review")
+            # logger.info(f"Generated review ({len(review)} chars)")
 
-            post_data = await self._send_comment(
-                project_id=project_id,
-                mr_iid=mr_iid,
-                comment=review,
-                email_date=email_date
-            )
+            # post_data = await self._send_comment(
+            #     project_id=project_id,
+            #     mr_iid=mr_iid,
+            #     comment=review,
+            #     email_date=email_date
+            # )
 
             logger.info(f"✅ Successfully posted summary to MR: {post_data.get('web_url', 'N/A')}")
             
