@@ -9,7 +9,7 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Optional, Set
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from src.utils.config import Config
 
@@ -31,9 +31,9 @@ class EmailMonitor:
         self.processed_emails_file = Path(config.processed_emails_db)
         self.processed_emails: Set[str] = self._load_processed_emails()
         
-        # Store start time - only process emails newer than this
+        # Store start time for reference
         self.start_time = datetime.now(timezone.utc)
-        logger.info(f"Email monitor initialized - will only process emails after {self.start_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        logger.info(f"Email monitor initialized - will process emails from last 24 hours")
     
     def _load_processed_emails(self) -> Set[str]:
         """Load set of processed email IDs from file."""
@@ -138,6 +138,7 @@ class EmailMonitor:
             "was added as an assignee",
             "assigned you to merge request",
             "assigned merge request",
+            "was added as a reviewer",
         ]
         
         text_to_check = (subject + " " + body).lower()
@@ -156,10 +157,11 @@ class EmailMonitor:
             mail.login(self.config.gmail_email, self.config.gmail_app_password)
             mail.select("inbox")
             
-            # Search for GitLab emails since start time (IMAP server-side filtering)
-            since_date = self.start_time.strftime("%d-%b-%Y")
+            # Search for GitLab emails from last 24 hours (IMAP server-side filtering)
+            twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+            since_date = twenty_four_hours_ago.strftime("%d-%b-%Y")
             search_criteria = f'(FROM "{self.config.gitlab_from_email}" SINCE {since_date})'
-            logger.info(f"Searching with criteria: {search_criteria}")
+            logger.info(f"Searching with criteria: {search_criteria} (last 24 hours)")
             _, message_numbers = mail.search(None, search_criteria)
             
             email_ids = message_numbers[0].split()
@@ -187,15 +189,18 @@ class EmailMonitor:
                 # Get email date
                 email_date = email_message.get("Date", "")
                 
-                # Double-check email date (client-side filtering as backup)
+                # Double-check email date (client-side filtering - only process last 24 hours)
                 email_datetime = self._parse_email_date(email_date)
                 if email_datetime:
                     # Make timezone-aware if it isn't already
                     if email_datetime.tzinfo is None:
                         email_datetime = email_datetime.replace(tzinfo=timezone.utc)
                     
-                    if email_datetime < self.start_time:
-                        logger.info(f"⏭️  Skipping old email: {subject} (received {email_datetime}, before start {self.start_time})")
+                    # Calculate 24 hour cutoff
+                    twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+                    
+                    if email_datetime < twenty_four_hours_ago:
+                        logger.info(f"⏭️  Skipping old email: {subject} (received {email_datetime}, older than 24 hours)")
                         # Mark as processed to avoid checking again
                         self.processed_emails.add(email_id_str)
                         continue
@@ -244,7 +249,7 @@ class EmailMonitor:
                         self._save_processed_emails()
                 else:
                     # Mark as processed (not an assignment)
-                    logger.info(f"ℹ️  Not an assignment email: {subject}")
+                    logger.info(f"ℹ️  Not an assignment email: {subject}, email id: {email_id_str}")
                     self.processed_emails.add(email_id_str)
             
             if new_assignments > 0:
