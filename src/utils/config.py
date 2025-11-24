@@ -30,6 +30,10 @@ class Config:
     # MR Processing
     mr_states_to_process: list[str]
     
+    # LLM Prompt Limits
+    max_files_in_prompt: int
+    max_diff_lines_per_file: int
+    
     # Database
     processed_emails_db: str
     
@@ -58,6 +62,8 @@ class Config:
             check_interval=int(os.getenv("CHECK_INTERVAL", "60")),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             mr_states_to_process=mr_states,
+            max_files_in_prompt=int(os.getenv("MAX_FILES_IN_PROMPT", "999999")),  # No limit by default
+            max_diff_lines_per_file=int(os.getenv("MAX_DIFF_LINES_PER_FILE", "999999")),  # No limit by default
             processed_emails_db=os.getenv("PROCESSED_EMAILS_DB", ".processed_emails.json"),
         )
     
