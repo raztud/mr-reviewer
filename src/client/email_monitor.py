@@ -2,16 +2,15 @@
 import asyncio
 import imaplib
 import email
-import json
 import logging
 import re
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
-from pathlib import Path
-from typing import Optional, Set
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 
 from src.utils.config import Config
+from src.utils.email_storage import create_email_storage, EmailStorage
 
 logger = logging.getLogger(__name__)
 
@@ -28,35 +27,13 @@ class EmailMonitor:
         """
         self.config = config
         self.on_mr_detected = on_mr_detected
-        self.processed_emails_file = Path(config.processed_emails_db)
-        self.processed_emails: Set[str] = self._load_processed_emails()
+        
+        # Use storage factory to get appropriate backend (Redis or JSON)
+        self.storage: EmailStorage = create_email_storage(config)
         
         # Store start time for reference
         self.start_time = datetime.now(timezone.utc)
         logger.info(f"Email monitor initialized - will process emails from last 24 hours")
-    
-    def _load_processed_emails(self) -> Set[str]:
-        """Load set of processed email IDs from file."""
-        if self.processed_emails_file.exists():
-            try:
-                with open(self.processed_emails_file, 'r') as f:
-                    data = json.load(f)
-                    return set(data.get("processed_ids", []))
-            except Exception as e:
-                logger.error(f"Error loading processed emails: {e}")
-                return set()
-        return set()
-    
-    def _save_processed_emails(self):
-        """Save processed email IDs to file."""
-        try:
-            with open(self.processed_emails_file, 'w') as f:
-                json.dump({
-                    "processed_ids": list(self.processed_emails),
-                    "last_updated": datetime.now().isoformat(),
-                }, f, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving processed emails: {e}")
     
     def _decode_header_value(self, header_value: str) -> str:
         """Decode email header value.
@@ -173,7 +150,7 @@ class EmailMonitor:
                 email_id_str = email_id.decode()
                 
                 # Skip if already processed
-                if email_id_str in self.processed_emails:
+                if self.storage.contains(email_id_str):
                     logger.debug(f"Skipping already processed email ID: {email_id_str}")
                     continue
                 
@@ -202,7 +179,7 @@ class EmailMonitor:
                     if email_datetime < twenty_four_hours_ago:
                         logger.info(f"⏭️  Skipping old email: {subject} (received {email_datetime}, older than 24 hours)")
                         # Mark as processed to avoid checking again
-                        self.processed_emails.add(email_id_str)
+                        self.storage.add(email_id_str)
                         continue
                 
                 # Get body
@@ -236,8 +213,8 @@ class EmailMonitor:
                         logger.info(f"MR URL: {mr_url}")
                         
                         # Mark as processed
-                        self.processed_emails.add(email_id_str)
-                        self._save_processed_emails()
+                        self.storage.add(email_id_str)
+                        self.storage.save()  # Explicit save for compatibility
                         
                         # Trigger callback
                         await self.on_mr_detected(mr_url, subject, email_date)
@@ -245,15 +222,14 @@ class EmailMonitor:
                     else:
                         logger.warning(f"Assignment email but no MR URL found: {subject}")
                         # Mark as processed anyway to avoid reprocessing
-                        self.processed_emails.add(email_id_str)
-                        self._save_processed_emails()
+                        self.storage.add(email_id_str)
+                        self.storage.save()
                 else:
                     # Mark as processed (not an assignment)
                     logger.info(f"ℹ️  Not an assignment email: {subject}, email id: {email_id_str}")
-                    self.processed_emails.add(email_id_str)
+                    self.storage.add(email_id_str)
             
             if new_assignments > 0:
-                self._save_processed_emails()
                 logger.info(f"Processed {new_assignments} new assignment(s)")
             
             mail.close()

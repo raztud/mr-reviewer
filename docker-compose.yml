@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Redis for persistent email tracking
+  redis:
+    image: redis:7-alpine
+    container_name: gitlab-mr-summarizer-redis
+    command: redis-server --appendonly yes --appendfsync everysec
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - gitlab-mr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # GitLab REST API Server
+  gitlab-server:
+    build: .
+    container_name: gitlab-mr-summarizer-gitlab
+    command: python -m src.servers.gitlab_rest_server
+    ports:
+      - "8001:8001"
+    environment:
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_FROM_EMAIL=${GITLAB_FROM_EMAIL:-gitlab@mg.gitlab.com}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - gitlab-mr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # LLM REST API Server
+  llm-server:
+    build: .
+    container_name: gitlab-mr-summarizer-llm
+    command: python -m src.servers.llm_rest_server
+    ports:
+      - "8002:8002"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-codellama}
+      - MAX_FILES_IN_PROMPT=${MAX_FILES_IN_PROMPT:-999999}
+      - MAX_DIFF_LINES_PER_FILE=${MAX_DIFF_LINES_PER_FILE:-999999}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - gitlab-mr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Email Monitor + Client
+  client:
+    build: .
+    container_name: gitlab-mr-summarizer-client
+    command: python -m src.client.standalone_client
+    environment:
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_FROM_EMAIL=${GITLAB_FROM_EMAIL:-gitlab@mg.gitlab.com}
+      - GITLAB_SERVER_URL=${GITLAB_SERVER_URL:-http://gitlab-server:8001}
+      - LLM_SERVER_URL=${LLM_SERVER_URL:-http://llm-server:8002}
+      - GMAIL_EMAIL=${GMAIL_EMAIL}
+      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://llm-server:8002}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-codellama}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MR_STATES_TO_PROCESS=${MR_STATES_TO_PROCESS:-opened}
+      - MAX_FILES_IN_PROMPT=${MAX_FILES_IN_PROMPT:-999999}
+      - MAX_DIFF_LINES_PER_FILE=${MAX_DIFF_LINES_PER_FILE:-999999}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - USE_REDIS=${USE_REDIS:-true}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      gitlab-server:
+        condition: service_healthy
+      llm-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gitlab-mr-network
+
+networks:
+  gitlab-mr-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+

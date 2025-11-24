@@ -23,6 +23,14 @@ class Config:
     ollama_base_url: str
     ollama_model: str
     
+    # Service URLs (for client)
+    gitlab_server_url: str
+    llm_server_url: str
+    
+    # Redis
+    redis_url: str
+    use_redis: bool
+    
     # Monitoring
     check_interval: int
     log_level: str
@@ -65,6 +73,10 @@ class Config:
             max_files_in_prompt=int(os.getenv("MAX_FILES_IN_PROMPT", "999999")),  # No limit by default
             max_diff_lines_per_file=int(os.getenv("MAX_DIFF_LINES_PER_FILE", "999999")),  # No limit by default
             processed_emails_db=os.getenv("PROCESSED_EMAILS_DB", ".processed_emails.json"),
+            gitlab_server_url=os.getenv("GITLAB_SERVER_URL", "http://localhost:8001"),
+            llm_server_url=os.getenv("LLM_SERVER_URL", "http://localhost:8002"),
+            redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+            use_redis=os.getenv("USE_REDIS", "false").lower() in ("true", "1", "yes"),
         )
     
     def validate(self) -> list[str]:

@@ -1,4 +1,4 @@
-.PHONY: help install setup test clean start-gitlab-server start-llm-server start-client start-all stop-all restart-all status logs logs-gitlab logs-llm logs-client clean-all check-setup
+.PHONY: help install setup test clean start-gitlab-server start-llm-server start-client start-all stop-all restart-all status logs logs-gitlab logs-llm logs-client clean-all check-setup docker-build docker-up docker-down docker-logs docker-logs-client docker-logs-gitlab docker-logs-llm docker-status docker-restart docker-clean
 
 # Variables
 PYTHON := python
@@ -13,19 +13,31 @@ help:
 	@echo "  make setup            - Setup configuration"
 	@echo "  make check-setup      - Check configuration"
 	@echo ""
-	@echo "Run Individual Components:"
-	@echo "  make start-gitlab-server  - Start GitLab MCP server"
-	@echo "  make start-llm-server     - Start LLM MCP server"
-	@echo "  make start-client         - Start email monitor + orchestrator"
+	@echo "Docker (Production - Recommended):"
+	@echo "  make docker-build     - Build Docker images"
+	@echo "  make docker-up        - Start all services in Docker"
+	@echo "  make docker-down      - Stop Docker services"
+	@echo "  make docker-logs      - View all Docker logs"
+	@echo "  make docker-status    - Show Docker services status"
+	@echo "  make docker-restart   - Restart Docker services"
 	@echo ""
-	@echo "Run All (Recommended):"
-	@echo "  make start-all       - Start all components in background"
-	@echo "  make stop-all        - Stop all components"
-	@echo "  make restart-all     - Restart all components"
-	@echo "  make logs            - View logs"
+	@echo "Local Services (Development):"
+	@echo "  make start-gitlab-server  - Start GitLab REST server"
+	@echo "  make start-llm-server     - Start LLM REST server"
+	@echo "  make start-client         - Start email monitor + client"
+	@echo "  make start-all            - Start all services locally"
+	@echo "  make stop-all             - Stop all local services"
+	@echo "  make restart-all          - Restart all local services"
+	@echo ""
+	@echo "Logs:"
+	@echo "  make logs             - View all logs"
+	@echo "  make logs-client      - View client logs"
+	@echo "  make docker-logs-client   - View Docker client logs"
 	@echo ""
 	@echo "Cleanup:"
-	@echo "  make clean           - Clean temporary files"
+	@echo "  make clean            - Clean temporary files"
+	@echo "  make clean-all        - Clean logs and processed emails"
+	@echo "  make docker-clean     - Clean Docker resources"
 
 # Setup
 install:
@@ -162,4 +174,57 @@ clean-all: clean
 	@rm -rf logs
 	@rm -f .processed_emails.json
 	@echo "Full clean complete"
+
+# =============================================================================
+# Docker Commands
+# =============================================================================
+
+docker-build:
+	@echo "Building Docker images..."
+	docker-compose build
+	@echo "✅ Docker images built"
+
+docker-up:
+	@echo "Starting services with Docker..."
+	docker-compose up -d
+	@echo "✅ All services started"
+	@echo ""
+	@echo "View logs with: make docker-logs"
+	@echo "Check status with: make docker-status"
+
+docker-down:
+	@echo "Stopping Docker services..."
+	docker-compose down
+	@echo "✅ All services stopped"
+
+docker-logs:
+	@echo "Viewing all logs (Ctrl+C to stop)..."
+	docker-compose logs -f
+
+docker-logs-client:
+	@echo "Client logs:"
+	@docker-compose logs -f client
+
+docker-logs-gitlab:
+	@echo "GitLab server logs:"
+	@docker-compose logs -f gitlab-server
+
+docker-logs-llm:
+	@echo "LLM server logs:"
+	@docker-compose logs -f llm-server
+
+docker-status:
+	@echo "Docker Services Status:"
+	@echo ""
+	@docker-compose ps
+
+docker-restart:
+	@$(MAKE) docker-down
+	@sleep 2
+	@$(MAKE) docker-up
+
+docker-clean:
+	@echo "Cleaning Docker resources..."
+	docker-compose down -v --rmi local
+	@echo "✅ Docker resources cleaned"
 

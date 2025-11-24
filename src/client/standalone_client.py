@@ -34,8 +34,8 @@ class StandaloneOrchestrator:
             config: Application configuration
         """
         self.config = config
-        self.gitlab_url = "http://localhost:8001"
-        self.llm_url = "http://localhost:8002"
+        self.gitlab_url = config.gitlab_server_url
+        self.llm_url = config.llm_server_url
 
     async def _get_mr_info(self, project_id, mr_iid, what):
         logger.info("Step 4: Fetching MR info...")
@@ -271,8 +271,8 @@ class StandaloneClient:
         logger.info(f"GitLab URL: {self.config.gitlab_url}")
         logger.info(f"Email: {self.config.gmail_email}")
         logger.info(f"Check Interval: {self.config.check_interval}s")
-        logger.info(f"GitLab MCP Server: http://localhost:8001")
-        logger.info(f"LLM MCP Server: http://localhost:8002")
+        logger.info(f"GitLab MCP Server: {self.config.gitlab_server_url}")
+        logger.info(f"LLM MCP Server: {self.config.llm_server_url}")
         logger.info("=" * 60)
         
         self.running = True

@@ -16,11 +16,13 @@ The system consists of 3 independent services:
 - ✅ REST API architecture - simple, stateless, and reliable
 - ✅ Multi-process design - independent services for better stability
 - ✅ Local LLM summarization (privacy-focused, no data sent to external APIs)
+- ✅ Redis-backed persistent storage with automatic fallback to JSON files
 - ✅ Automatic posting of summaries to GitLab MRs
-- ✅ Duplicate detection to avoid reprocessing
+- ✅ Duplicate detection to avoid reprocessing (O(1) lookups with Redis)
 - ✅ Background monitoring with configurable intervals
 - ✅ Comprehensive logging and easy debugging
 - ✅ Comprehensive test suite with pytest
+- ✅ Docker deployment with health checks and persistent volumes
 
 ## Prerequisites
 
@@ -119,7 +121,25 @@ PROCESSED_EMAILS_DB=.processed_emails.json
 
 ## Usage
 
-### Running All Services
+### Option 1: Docker (Recommended for Production)
+
+See [DOCKER.md](DOCKER.md) for complete Docker deployment guide.
+
+Quick start:
+```bash
+cp .env.docker.example .env
+# Edit .env with your credentials
+docker-compose up -d
+docker-compose logs -f
+```
+
+**Includes:**
+- ✅ GitLab REST API server
+- ✅ LLM REST API server  
+- ✅ Email monitor client
+- ✅ Redis with persistent storage
+
+### Option 2: Local Services (Development)
 
 Start all components (GitLab server, LLM server, and client):
 
